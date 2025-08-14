@@ -1,0 +1,42 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch: {}               # Elle "Run workflow" ile çalıştır
+  push:
+    branches: [ "main", "master", "ana" ]  # Bu dallara push olursa otomatik çalışır
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+
+      - name: Ensure project & get packages
+        run: |
+          flutter pub get || true
+          if [ ! -d "android" ]; then flutter create .; fi
+          flutter pub get
+
+      - name: Build APK (release, unsigned)
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          
