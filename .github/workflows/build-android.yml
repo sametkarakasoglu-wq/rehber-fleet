@@ -1,32 +1,60 @@
-name: Build Android APK
+name: Build Android APK (debug)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
+  push:
+    branches: [ "main", "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses & install basic tools
+        run: |
+          sdkmanager --licenses >/dev/null
+          sdkmanager "platform-tools" "build-tools;33.0.1" "platforms;android-33"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6'
+          flutter-version: "3.24.3"
+          channel: "stable"
 
-      - name: Install dependencies
+      - name: Print versions (sanity)
+        run: |
+          java -version
+          flutter --version
+          adb --version || true
+
+      - name: Get pub packages
         run: flutter pub get
 
-      - name: Create Flutter project (if needed)
-        run: flutter create . --platforms android --project-name rehber_fleet
+      # İSTERSEN: Proje yeni klonlandığında /android klasörü yoksa oluştur:
+      - name: Ensure android folder exists
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --project-name rehber_fleet
+          fi
 
-      - name: Build APK
-        run: flutter build apk --release
+      # 🔑 EN ÖNEMLİ DEĞİŞİKLİK: DEBUG APK üret
+      - name: Build APK (debug, signed by debug keystore)
+        run: flutter build apk --debug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: app-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
