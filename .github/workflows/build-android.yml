@@ -9,22 +9,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Daha detaylı loglar için
-    env:
-      ACTIONS_RUNNER_DEBUG: "true"
-      ACTIONS_STEP_DEBUG: "true"
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-          - name: Set up Android SDK
+    - name: Set up Android SDK
       uses: android-actions/setup-android@v3
 
     - name: Install Android SDK packages
@@ -32,43 +27,32 @@ jobs:
         sdkmanager --licenses >/dev/null
         sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-    - name: Make gradlew executable (best effort)
-      run: chmod +x android/gradlew || true
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.3'
-          channel: 'stable'
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.3'
+        channel: 'stable'
+        cache: true
 
-      - name: Print versions & quick sanity check
-        run: |
-          flutter --version
-          dart --version
-          java -version
-          echo "Gradle wrapper exists?"; test -f android/gradlew && echo "yes" || echo "no"
-          echo "Project root listing:"; ls -la
+    - name: Print versions
+      run: |
+        flutter --version
+        java -version
+        adb --version
+        gradle -v || true
 
-      - name: Ensure project & get packages
-        run: |
-          flutter pub get || true
-          if [ ! -d "android" ]; then
-            echo "Android folder missing, creating one"
-            flutter create . --project-name rehber_fleet
-          fi
-          flutter pub get
+    - name: Ensure project & get packages
+      run: |
+        flutter pub get
 
-      - name: Make gradlew executable (if exists)
-        run: |
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
-          fi
+    - name: Make gradlew executable
+      run: chmod +x android/gradlew
 
-      - name: Build APK (release, unsigned, verbose)
-        run: flutter build apk --release -v
+    - name: Build APK (release, unsigned)
+      run: flutter build apk --release
 
-      - name: Upload APK artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-apk
+        path: build/app/outputs/flutter-apk/app-release.apk
