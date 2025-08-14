@@ -25,11 +25,14 @@ jobs:
           flutter-version: '3.24.3'
           channel: 'stable'
 
-      - name: Ensure project & get packages
-        run: |
-          flutter pub get || true
-          if [ ! -d "android" ]; then flutter create .; fi
-          flutter pub get
+      - name: Ensure project & get
+  run: |
+    flutter pub get || true
+    if [ ! -d "android" ]; then
+      flutter create . --project-name rehber_fleet
+    fi
+    flutter pub get
+          
 
       - name: Build APK (release, unsigned)
         run: flutter build apk --release
