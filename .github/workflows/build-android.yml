@@ -3,11 +3,16 @@ name: Build Android APK
 on:
   workflow_dispatch: {}
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # Daha detaylı loglar için
+    env:
+      ACTIONS_RUNNER_DEBUG: "true"
+      ACTIONS_STEP_DEBUG: "true"
 
     steps:
       - name: Checkout
@@ -16,15 +21,8 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-
-      # Android SDK kurulsun (Gradle/Flutter bunu istiyor)
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: 34.0.0
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -32,20 +30,34 @@ jobs:
           flutter-version: '3.24.3'
           channel: 'stable'
 
-      - name: Ensure project & get packages
-        shell: bash
+      - name: Print versions & quick sanity check
         run: |
           flutter --version
-          # android klasörü yoksa oluştur
+          dart --version
+          java -version
+          echo "Gradle wrapper exists?"; test -f android/gradlew && echo "yes" || echo "no"
+          echo "Project root listing:"; ls -la
+
+      - name: Ensure project & get packages
+        run: |
+          flutter pub get || true
           if [ ! -d "android" ]; then
+            echo "Android folder missing, creating one"
             flutter create . --project-name rehber_fleet
           fi
           flutter pub get
 
-      - name: Build APK (release, unsigned)
-        run: flutter build apk --release
+      - name: Make gradlew executable (if exists)
+        run: |
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew
+          fi
+
+      - name: Build APK (release, unsigned, verbose)
+        run: flutter build apk --release -v
 
       - name: Upload APK artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
