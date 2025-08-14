@@ -1,4 +1,4 @@
-name: rehber_fleet_app
+name: rehber_fleet
 description: Rehber Fleet app
 publish_to: 'none'
 version: 1.0.0+1
