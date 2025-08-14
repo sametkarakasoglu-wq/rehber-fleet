@@ -3,56 +3,51 @@ name: Build Android APK
 on:
   workflow_dispatch: {}
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
 
-    - name: Install Android SDK packages
-      run: |
-        sdkmanager --licenses >/dev/null
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      - name: Ensure Android platform & fetch packages
+        run: |
+          flutter --version
+          dart --version
+          java -version
+          flutter pub get || true
+          if [ ! -d "android" ]; then
+            # pubspec.yaml içindeki 'name:' ile aynı olmalı!
+            flutter create . --platforms android --project-name rehber_fleet_app
+          fi
+          flutter pub get
 
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.24.3'
-        channel: 'stable'
-        cache: true
+      - name: Make gradlew executable (if exists)
+        run: |
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew
+          fi
 
-    - name: Print versions
-      run: |
-        flutter --version
-        java -version
-        adb --version
-        gradle -v || true
+      - name: Build APK (release, unsigned)
+        run: flutter build apk --release
 
-    - name: Ensure project & get packages
-      run: |
-        flutter pub get
-
-    - name: Make gradlew executable
-      run: chmod +x android/gradlew
-
-    - name: Build APK (release, unsigned)
-      run: flutter build apk --release
-
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release-apk
-        path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
