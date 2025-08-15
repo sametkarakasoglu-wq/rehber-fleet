@@ -1,6 +1,6 @@
 name: rehber_fleet
 description: Rehber Fleet uygulaması
-publish_to: 'none' # Uygulamayı pub.dev'e yüklemeyeceğiz
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -22,9 +22,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - app_icon.png
+    - assets/app_icon.png
 
 flutter_icons:
   android: true
   ios: true
-  image_path: "app_icon.png"
+  image_path: "assets/app_icon.png"
