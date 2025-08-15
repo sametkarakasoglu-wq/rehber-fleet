@@ -1,20 +1,30 @@
 name: rehber_fleet
-description: Rehber Fleet mobile app
-publish_to: "none"
+description: Rehber Fleet uygulaması
+publish_to: 'none' # Uygulamayı pub.dev'e yüklemeyeceğiz
+
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
+
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - app_icon.png
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "app_icon.png"
