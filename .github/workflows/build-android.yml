@@ -1,17 +1,13 @@
-name: Build Android (Debug, Verbose)
+name: Build Android (Debug)
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:+UseParallelGC -Dkotlin.daemon.jvm.options=-Xmx1g"
 
     steps:
       - name: Checkout
@@ -26,56 +22,29 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.2"
           channel: stable
-          cache: true
-
-      - name: Flutter doctor
-        run: flutter doctor -v
-
-      - name: Install Android SDK components
-        run: |
-          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses
-          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
+          flutter-version: "3.24.3"
 
       - name: flutter pub get (pre)
-        run: flutter pub get -v
+        run: flutter pub get
 
+      # android klasörü yoksa otomatik oluştur
       - name: Create Android folder if missing
         run: |
           if [ ! -d "android" ]; then
-            echo "android/ yok -> oluşturuluyor"
             flutter create --platforms=android --project-name rehber_fleet .
-          else
-            echo "android/ var -> geçiliyor"
           fi
 
       - name: flutter pub get
-        run: flutter pub get -v
+        run: flutter pub get
 
-      - name: Build debug APK (verbose + stacktrace)
-        run: |
-          set -o pipefail
-          flutter build apk --debug -v 2>&1 | tee build_log.txt || true
-          echo "--------- GRADLE STACKTRACE ---------"
-          ./android/gradlew -p android assembleDebug --stacktrace --info 2>&1 | tee -a build_log.txt || true
-          # Build başarısızsa job'ı fail et
-          if ! test -f build/app/outputs/flutter-apk/app-debug.apk; then
-            exit 1
-          fi
+      # DEBUG APK (cihaza direkt yüklenir)
+      - name: Build debug APK
+        run: flutter build apk --debug
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
+          name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
-
-      - name: Upload verbose logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: build_log.txt
+          if-no-files-found: error
