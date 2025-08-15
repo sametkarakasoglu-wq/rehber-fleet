@@ -1,50 +1,67 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [ "main" ]
   workflow_dispatch:
+  push:
+    paths:
+      - "lib/**"
+      - "pubspec.yaml"
+      - ".github/workflows/build-android.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Set up Flutter
+      - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'
-          channel: 'stable'
+          flutter-version: "3.24.3"
+          channel: "stable"
+          cache: true
 
-      - name: Create android folder if missing
+      - name: Print versions
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --project-name rehber_fleet --org com.rehberfleet
-          fi
+          flutter --version
+          java -version
+          sdkmanager --version
 
       - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
+        run: yes | sdkmanager --licenses
 
-      - name: Flutter pub get
+      - name: Ensure android folder exists
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android
+          fi
+
+      - name: Make gradlew executable (if exists)
+        run: |
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew
+          fi
+
+      - name: Get pub packages
         run: flutter pub get
 
-      - name: Build APK (release)
-        run: flutter build apk --release
+      - name: Build DEBUG APK (no keystore needed)
+        run: flutter build apk --debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: app-debug.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn
