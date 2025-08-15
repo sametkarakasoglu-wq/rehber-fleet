@@ -1,4 +1,4 @@
-name: Build Android (Debug)
+name: Build Android (Debug, Verbose)
 
 on:
   push:
@@ -8,6 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:+UseParallelGC -Dkotlin.daemon.jvm.options=-Xmx1g"
 
     steps:
       - name: Checkout
@@ -23,33 +27,55 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.22.2"
-          channel: "stable"
+          channel: stable
           cache: true
 
-      # pubspec düzgün mü? (erken fail)
-      - name: Flutter pub get (pre)
-        run: flutter pub get
+      - name: Flutter doctor
+        run: flutter doctor -v
 
-      # ANDROID klasörü yoksa OTOMATİK OLUŞTUR
+      - name: Install Android SDK components
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+
+      - name: flutter pub get (pre)
+        run: flutter pub get -v
+
       - name: Create Android folder if missing
         run: |
           if [ ! -d "android" ]; then
-            echo "android/ klasörü yok, oluşturuluyor…"
+            echo "android/ yok -> oluşturuluyor"
             flutter create --platforms=android --project-name rehber_fleet .
           else
-            echo "android/ klasörü mevcut."
+            echo "android/ var -> geçiliyor"
           fi
 
-      # (Oluştuysa paketleri tekrar topla)
-      - name: Flutter pub get
-        run: flutter pub get
+      - name: flutter pub get
+        run: flutter pub get -v
 
-      # Debug APK üret (imzasız, hızlı)
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Build debug APK (verbose + stacktrace)
+        run: |
+          set -o pipefail
+          flutter build apk --debug -v 2>&1 | tee build_log.txt || true
+          echo "--------- GRADLE STACKTRACE ---------"
+          ./android/gradlew -p android assembleDebug --stacktrace --info 2>&1 | tee -a build_log.txt || true
+          # Build başarısızsa job'ı fail et
+          if ! test -f build/app/outputs/flutter-apk/app-debug.apk; then
+            exit 1
+          fi
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload verbose logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build_log.txt
