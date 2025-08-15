@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Rehber Fleet',
-      theme: ThemeData(useMaterial3: true),
-      home: const HomePage(),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Rehber Fleet')),
+      body: const Center(
+        child: Text(
+          'Uygulama hazır 👋',
+          style: TextStyle(fontSize: 20),
+        ),
+      ),
     );
   }
 }
