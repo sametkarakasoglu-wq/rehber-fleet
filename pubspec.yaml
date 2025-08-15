@@ -1,30 +1,44 @@
 name: rehber_fleet
-description: Rehber Fleet uygulaması
-publish_to: 'none'
-
+description: Rehber Fleet mobile app
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.17.0 <3.0.0"
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.6
+  share_plus: ^10.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^4.0.0
+  # İkon ve splash araçları (terminal gerektirmeyecek, workflow’da çalıştıracağız)
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/app_icon.png
 
+  # UYGULAMADA KULLANILACAK VARLIKLAR
+  assets:
+    - assets/uygulama_simgesi.png
+
+# İKON KONFİGÜRASYONU
 flutter_icons:
   android: true
-  ios: true
-  image_path: "assets/app_icon.png"
+  ios: false
+  image_path: assets/uygulama_simgesi.png
+  adaptive_icon_background: "#0A3D66"
+  adaptive_icon_foreground: assets/uygulama_simgesi.png
+
+# AÇILIŞ EKRANI (SPLASH) KONFİGÜRASYONU
+flutter_native_splash:
+  color: "#0A3D66"
+  image: assets/uygulama_simgesi.png
+  android_12:
+    color: "#0A3D66"
+    image: assets/uygulama_simgesi.png
