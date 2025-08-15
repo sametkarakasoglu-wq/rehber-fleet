@@ -1,50 +1,57 @@
 name: Build Android (Debug)
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Kodu al (checkout)
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Java 17 kur
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Flutter
+      - name: Flutter kurulumu
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.24.3"
+          cache: true
 
-      - name: flutter pub get (pre)
+      - name: Flutter sürümünü göster
+        run: flutter --version
+
+      # ---- Bağımlılıkları indir ----
+      - name: Flutter pub get (önceki)
         run: flutter pub get
 
-      # android klasörü yoksa otomatik oluştur
-      - name: Create Android folder if missing
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create --platforms=android --project-name rehber_fleet .
-          fi
+      # ---- İKONLARI ÜRET ----
+      - name: Generate app icons
+        run: flutter pub run flutter_launcher_icons:main -f pubspec.yaml
 
-      - name: flutter pub get
-        run: flutter pub get
+      # ---- SPLASH EKRANINI ÜRET ----
+      - name: Generate splash screen
+        run: flutter pub run flutter_native_splash:create
 
-      # DEBUG APK (cihaza direkt yüklenir)
-      - name: Build debug APK
+      # ---- Android lisanslarını kabul et ----
+      - name: Android lisanslarını kabul et
+        run: yes | flutter doctor --android-licenses
+
+      # ---- Derle (Debug APK) ----
+      - name: Hata ayıklama APK'sı oluştur
         run: flutter build apk --debug
 
-      - name: Upload APK
+      # ---- APK'yı çıktı olarak yükle ----
+      - name: APK eserini yükle
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: app-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
