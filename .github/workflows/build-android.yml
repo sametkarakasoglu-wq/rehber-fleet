@@ -1,12 +1,9 @@
-name: Build Android APK
+name: Build Android (Debug)
 
 on:
-  workflow_dispatch:
   push:
-    paths:
-      - "lib/**"
-      - "pubspec.yaml"
-      - ".github/workflows/build-android.yml"
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,52 +13,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.3"
+          flutter-version: "3.22.2"
           channel: "stable"
           cache: true
 
-      - name: Print versions
-        run: |
-          flutter --version
-          java -version
-          sdkmanager --version
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses
-
-      - name: Ensure android folder exists
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android
-          fi
-
-      - name: Make gradlew executable (if exists)
-        run: |
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
-          fi
-
-      - name: Get pub packages
+      # pubspec düzgün mü? (erken fail)
+      - name: Flutter pub get (pre)
         run: flutter pub get
 
-      - name: Build DEBUG APK (no keystore needed)
+      # ANDROID klasörü yoksa OTOMATİK OLUŞTUR
+      - name: Create Android folder if missing
+        run: |
+          if [ ! -d "android" ]; then
+            echo "android/ klasörü yok, oluşturuluyor…"
+            flutter create --platforms=android --project-name rehber_fleet .
+          else
+            echo "android/ klasörü mevcut."
+          fi
+
+      # (Oluştuysa paketleri tekrar topla)
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # Debug APK üret (imzasız, hızlı)
+      - name: Build debug APK
         run: flutter build apk --debug
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
-          if-no-files-found: warn
